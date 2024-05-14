@@ -1,4 +1,4 @@
-access_token = "";
+let access_token = "";
 
 async function initiateSignIn() {
     // Get client_id from key.json
@@ -20,12 +20,10 @@ async function getCalendarEvents() {
             },
         }
     );
-    const data = await response.json();
-    console.log(data);
-    const confirmedEvents = data.items.filter(
-        (event) => event.status === "confirmed"
-    );
-    console.log(confirmedEvents);
+    let data = await response.json();
+    const confirmedEvents = data.items.filter((event) => {
+        return !event.attendees;
+    });
 
     var events_div = document.createElement("div");
     events_div.setAttribute("id", "events");
@@ -51,7 +49,7 @@ async function getCalendarEvents() {
             start +
             "<br>" +
             end +
-            "<br><br>";
+            "<br><br>"; //TODO: put data here
         events_div.appendChild(event);
     }
 
