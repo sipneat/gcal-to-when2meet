@@ -13,7 +13,7 @@ async function initiateSignIn() {
 
 async function getCalendarEvents() {
     const response = await fetch(
-        "https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=2024-05-13T00:00:00Z&timeMax=2024-05-17T23:59:59Z",
+        "https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=2024-05-12T00:00:00Z&timeMax=2024-05-17T23:59:59Z",
         {
             headers: {
                 Authorization: "Bearer " + access_token,
@@ -21,9 +21,35 @@ async function getCalendarEvents() {
         }
     );
     let data = await response.json();
-    const confirmedEvents = data.items.filter((event) => {
-        return !event.attendees;
-    });
+
+    let seen = new Set();
+    function getEventKey(event) {
+        const date = new Date(event.start.dateTime);
+        const day = date.toLocaleDateString("en-US", { weekday: "long" });
+        console.log(day);
+        const time = date.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+        return `${day} ${time}`;
+    }
+
+    const confirmedEvents = data.items
+        .filter((event) => {
+            return (
+                !event.attendees ||
+                event.attendees.some((attendee) => {
+                    return (
+                        attendee.self && attendee.responseStatus === "accepted"
+                    );
+                })
+            );
+        })
+        .filter((event) => {
+            const key = getEventKey(event);
+            return seen.has(key) ? false : seen.add(key);
+        })
+        .reverse();
 
     var events_div = document.createElement("div");
     events_div.setAttribute("id", "events");
@@ -43,13 +69,18 @@ async function getCalendarEvents() {
             minute: "2-digit",
             hour12: true,
         });
+        const dayOfWeek = new Date(
+            confirmedEvents[i].start.dateTime
+        ).toLocaleDateString("en-US", { weekday: "long" });
         event.innerHTML =
             confirmedEvents[i].summary +
+            " - " +
+            dayOfWeek +
             "<br>" +
             start +
             "<br>" +
             end +
-            "<br><br>"; //TODO: put data here
+            "<br><br>";
         events_div.appendChild(event);
     }
 
