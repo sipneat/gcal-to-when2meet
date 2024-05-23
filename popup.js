@@ -3,7 +3,6 @@ document.addEventListener("DOMContentLoaded", function () {
         .getElementById("getEventsBtn")
         .addEventListener("click", function () {
             getAccessTokenFromStorage(function (access_token) {
-                console.log("Access token from storage: ", access_token);
                 getCalendarEvents(1716912000, 1717739100, access_token);
             });
         });
@@ -45,6 +44,8 @@ async function getCalendarEvents(start, end, access_token) {
     const startTime = new Date(start * 1000);
     const endTime = new Date(end * 1000);
     console.log(startTime, endTime);
+
+    console.log("Access token: ", access_token);
 
     const response = await fetch(
         "https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=" +
@@ -155,4 +156,23 @@ async function getCalendarEvents(start, end, access_token) {
     }
 
     document.body.appendChild(events_div);
+
+    return confirmedEvents
+        .map((event) => {
+            let times = [];
+            let start = new Date(event.start.dateTime);
+            let end = new Date(event.end.dateTime);
+
+            start.setMinutes(Math.floor(start.getMinutes() / 15) * 15);
+            start.setSeconds(0);
+            start.setMilliseconds(0);
+
+            while (start < end) {
+                times.push(Math.floor(start.getTime() / 1000));
+                start.setMinutes(start.getMinutes() + 15);
+            }
+
+            return times;
+        })
+        .flat();
 }

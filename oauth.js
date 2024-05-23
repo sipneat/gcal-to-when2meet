@@ -35,7 +35,7 @@ function getAccessTokenFromStorage(callback) {
             let refresh_token = data.refresh_token;
             console.log(
                 "Expiration date: ",
-                new Date(expiration_date).toISOString()
+                new Date(expiration_date).toLocaleString()
             );
             if (new Date().getTime() > expiration_date) {
                 access_token = await refreshAccessToken(refresh_token);
@@ -88,7 +88,6 @@ document.addEventListener("DOMContentLoaded", function () {
 // Function to get the access token from storage when the extension is reopened
 document.addEventListener("DOMContentLoaded", function () {
     getAccessTokenFromStorage(function (access_token) {
-        console.log("Access token from storage: ", access_token);
         if (access_token) {
             let oldButton = document.getElementById("googleSignIn");
             let newButton = document.createElement("button");
@@ -97,5 +96,6 @@ document.addEventListener("DOMContentLoaded", function () {
             newButton.className = "logged-in-btn";
             oldButton.parentNode.replaceChild(newButton, oldButton);
         }
+        console.log("Access token: ", access_token);
     });
 });
