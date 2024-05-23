@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Google Calendar -> when2meet</title>
+    <script src="https://cdn.jsdelivr.net/npm/rrule@2.6.8/dist/es5/rrule.min.js"></script>
     <script src="popup.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -14,7 +15,7 @@
         <h2>Google Calendar -> when2meet</h2>
     </div>
     <button class="login-with-google-btn" id="googleSignIn" onclick="initiateSignIn()">Sign in with Google</button>
-    <button onclick="getCalendarEvents()">Get Calendar Events</button>
+    <button onclick="getCalendarEvents(1716188400, 1716620400)">Get Calendar Events</button>
 </body>
 
 </html>
