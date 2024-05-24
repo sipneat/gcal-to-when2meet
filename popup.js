@@ -121,37 +121,35 @@ async function getCalendarEvents(start, end, access_token) {
     );
 
     var events_div = document.createElement("div");
+    events_div.className = "events";
     events_div.setAttribute("id", "events");
 
     for (var i = 0; i < confirmedEvents.length; i++) {
         var event = document.createElement("div");
-        const start = Math.floor(
-            new Date(confirmedEvents[i].start.dateTime).getTime() / 1000
-        );
-        const start2 = new Date(
-            confirmedEvents[i].start.dateTime
-        ).toLocaleString();
-        const end = Math.floor(
-            new Date(confirmedEvents[i].end.dateTime).getTime() / 1000
-        );
-        const end2 = new Date(confirmedEvents[i].end.dateTime).toLocaleString();
+        event.className = "eventCard";
+        const startDate = new Date(confirmedEvents[i].start.dateTime);
+        const endDate = new Date(confirmedEvents[i].end.dateTime);
+        const start = `${startDate.toLocaleDateString()} @ ${startDate.toLocaleTimeString(
+            [],
+            { hour: "2-digit", minute: "2-digit" }
+        )}`;
+        const end = `${endDate.toLocaleDateString()} @ ${endDate.toLocaleTimeString(
+            [],
+            { hour: "2-digit", minute: "2-digit" }
+        )}`;
         const dayOfWeek = new Date(
             confirmedEvents[i].start.dateTime
         ).toLocaleDateString("en-US", { weekday: "long" });
 
-        event.innerHTML =
-            confirmedEvents[i].summary +
-            " - " +
-            dayOfWeek +
-            "<br>" +
-            start +
-            " - " +
-            start2 +
-            "<br>" +
-            end +
-            " - " +
-            end2 +
-            "<br><br>";
+        event.innerHTML = `
+            <div class="checkbox">
+                <input type="checkbox" id="eventCheckbox${i}" name="eventCheckbox${i}" checked>
+            </div>
+            <div>
+                <h2>${confirmedEvents[i].summary} - ${dayOfWeek}</h2>
+                <p>${start}</p>
+                <p>${end}</p>
+            </div>`;
         events_div.appendChild(event);
     }
 

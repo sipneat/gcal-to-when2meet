@@ -3,7 +3,20 @@ document.addEventListener("DOMContentLoaded", function () {
     getAccessTokenFromStorage(function (result) {
         access_token = result;
     });
-    document.getElementById("scrapeBtn").addEventListener("click", scrape);
+
+    let scrapeBtn = document.getElementById("scrapeBtn");
+    if (
+        !chrome.tabs.query(
+            { active: true, currentWindow: true },
+            function (tabs) {
+                const url = tabs[0].url;
+                if (!url.includes("when2meet.com/?")) {
+                    scrapeBtn.disabled = true;
+                    scrapeBtn.innerHTML = "Please navigate to a When2Meet page";
+                } else scrapeBtn.addEventListener("click", scrape);
+            }
+        )
+    );
 });
 
 function scrape() {
