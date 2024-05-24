@@ -49,6 +49,8 @@ function exchangeCodeForToken(client_id, client_secret, code) {
                 refresh_token: refresh_token,
                 expiration_date: expiration_date,
             });
+            if (access_token) makeSignedInButton();
+            else console.log("Token Error");
         })
         .catch((error) => console.error("Error:", error));
 }
@@ -62,6 +64,10 @@ function getAccessTokenFromStorage(callback) {
             let access_token = data.access_token;
             let expiration_date = data.expiration_date;
             let refresh_token = data.refresh_token;
+            if (!access_token && !called) {
+                console.log("Access token not found");
+                return;
+            }
             if (new Date().getTime() > expiration_date) {
                 if (!called) makeRefreshButton();
                 access_token = await refreshAccessToken(refresh_token);

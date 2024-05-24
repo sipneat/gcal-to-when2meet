@@ -78,7 +78,7 @@ async function handleResponse(result) {
 }
 
 function triggerOnMouseDown(freeTimes) {
-    let delay = 50;
+    let delay = 10;
 
     let clickElement = (time) => {
         return new Promise((resolve) => {

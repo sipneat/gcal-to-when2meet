@@ -45,8 +45,6 @@ async function getCalendarEvents(start, end, access_token) {
     const endTime = new Date(end * 1000);
     console.log(startTime, endTime);
 
-    console.log("Access token: ", access_token);
-
     const response = await fetch(
         "https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=" +
             startTime.toISOString() +
