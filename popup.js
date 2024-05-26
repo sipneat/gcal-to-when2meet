@@ -18,73 +18,79 @@ async function getCalendarEvents(start, end, allTimes, access_token) {
     let data = await response.json();
     let confirmedEvents = [];
 
-    data.items.forEach((event) => {
-        if (event.id.split("_")[1]) {
-            return;
-        }
-
-        if (event.recurrence) {
-            const ruleParts = event.recurrence[0].split(";");
-            const rule = {};
-
-            ruleParts.forEach((part) => {
-                const [key, value] = part.split("=");
-                rule[key] = value;
-            });
-
-            if (rule.BYDAY) {
-                let days = rule.BYDAY.split(",");
-                const eventDay = new Date(event.start.dateTime)
-                    .toLocaleDateString("en-US", { weekday: "short" })
-                    .toUpperCase();
-                days = days.filter((day) => day !== eventDay);
-
-                const recurringEvents = generateRecurringEvents(
-                    event,
-                    startTime,
-                    endTime,
-                    days
-                );
-                recurringEvents.forEach((recurringEvent) => {
-                    !recurringEvent.attendees ||
-                    recurringEvent.attendees.some(
-                        (attendee) =>
-                            attendee.self &&
-                            attendee.responseStatus === "accepted"
-                    )
-                        ? (recurringEvent.active = true)
-                        : (recurringEvent.active = false);
-
-                    if (
-                        allTimes.includes(
-                            Date.parse(recurringEvent.start.dateTime) / 1000
-                        ) ||
-                        allTimes.includes(
-                            Date.parse(recurringEvent.end.dateTime) / 1000
-                        )
-                    ) {
-                        confirmedEvents.push(recurringEvent);
-                    }
-                });
+    try {
+        data.items.forEach((event) => {
+            if (event.id.split("_")[1]) {
                 return;
             }
-        }
 
-        !event.attendees ||
-        event.attendees.some(
-            (attendee) =>
-                attendee.self && attendee.responseStatus === "accepted"
-        )
-            ? (event.active = true)
-            : (event.active = false);
+            if (event.recurrence) {
+                const ruleParts = event.recurrence[0].split(";");
+                const rule = {};
 
-        if (
-            allTimes.includes(Date.parse(event.start.dateTime) / 1000) ||
-            allTimes.includes(Date.parse(event.end.dateTime) / 1000)
-        ) {
-            confirmedEvents.push(event);
-        }
-    });
+                ruleParts.forEach((part) => {
+                    const [key, value] = part.split("=");
+                    rule[key] = value;
+                });
+
+                if (rule.BYDAY) {
+                    let days = rule.BYDAY.split(",");
+                    const eventDay = new Date(event.start.dateTime)
+                        .toLocaleDateString("en-US", { weekday: "short" })
+                        .toUpperCase();
+                    days = days.filter((day) => day !== eventDay);
+
+                    const recurringEvents = generateRecurringEvents(
+                        event,
+                        startTime,
+                        endTime,
+                        days
+                    );
+                    recurringEvents.forEach((recurringEvent) => {
+                        !recurringEvent.attendees ||
+                        recurringEvent.attendees.some(
+                            (attendee) =>
+                                attendee.self &&
+                                attendee.responseStatus === "accepted"
+                        )
+                            ? (recurringEvent.active = true)
+                            : (recurringEvent.active = false);
+
+                        if (
+                            allTimes.includes(
+                                Date.parse(recurringEvent.start.dateTime) / 1000
+                            ) ||
+                            allTimes.includes(
+                                Date.parse(recurringEvent.end.dateTime) / 1000
+                            )
+                        ) {
+                            confirmedEvents.push(recurringEvent);
+                        }
+                    });
+                    return;
+                }
+            }
+
+            !event.attendees ||
+            event.attendees.some(
+                (attendee) =>
+                    attendee.self && attendee.responseStatus === "accepted"
+            )
+                ? (event.active = true)
+                : (event.active = false);
+
+            if (
+                allTimes.includes(Date.parse(event.start.dateTime) / 1000) ||
+                allTimes.includes(Date.parse(event.end.dateTime) / 1000)
+            ) {
+                confirmedEvents.push(event);
+            }
+        });
+    } catch (error) {
+        error_message = document.createElement("p");
+        error_message.innerHTML = "Error: Google authentication failed";
+        document.body.appendChild(error_message);
+    }
 
     confirmedEvents = confirmedEvents.sort(
         (a, b) => new Date(a.start.dateTime) - new Date(b.start.dateTime)
@@ -97,14 +103,16 @@ async function getCalendarEvents(start, end, allTimes, access_token) {
     for (var i = 0; i < confirmedEvents.length; i++) {
         var event = document.createElement("div");
         event.className = "eventCard";
-        event.setAttribute(
-            "start",
-            Date.parse(confirmedEvents[i].start.dateTime) / 1000
-        );
-        event.setAttribute(
-            "end",
-            Date.parse(confirmedEvents[i].end.dateTime) / 1000
-        );
+        startAttr = new Date(confirmedEvents[i].start.dateTime);
+        startAttr.setMinutes(Math.floor(startAttr.getMinutes() / 15) * 15);
+        startAttr.setSeconds(0);
+        startAttr.setMilliseconds(0);
+        let endAttr = new Date(confirmedEvents[i].end.dateTime);
+        endAttr.setMinutes(Math.floor(endAttr.getMinutes() / 15) * 15);
+        endAttr.setSeconds(0);
+        endAttr.setMilliseconds(0);
+        event.setAttribute("start", Math.floor(startAttr.getTime() / 1000));
+        event.setAttribute("end", Math.floor(endAttr.getTime() / 1000));
         const startDate = new Date(confirmedEvents[i].start.dateTime);
         const endDate = new Date(confirmedEvents[i].end.dateTime);
         const start = `${startDate.toLocaleDateString()} @ ${startDate.toLocaleTimeString(

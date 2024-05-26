@@ -1,5 +1,17 @@
-// Function to initiate sign-in and get the access token
-function oauthSignIn(client_id, client_secret) {
+document.addEventListener("DOMContentLoaded", function () {
+    document
+        .getElementById("googleSignIn")
+        .addEventListener("click", async function () {
+            const response = await fetch("key.json");
+            const data = await response.json();
+            oauthSignIn(data.web.client_id);
+        });
+    document
+        .getElementById("refreshBtn")
+        .addEventListener("click", resetExpirationDate);
+});
+
+function oauthSignIn(client_id) {
     const redirect_uri = chrome.identity.getRedirectURL();
     const auth_url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${client_id}&redirect_uri=${encodeURIComponent(
         redirect_uri
@@ -15,18 +27,17 @@ function oauthSignIn(client_id, client_secret) {
                     new URL(redirect_url).search
                 );
                 const code = urlParams.get("code");
-                exchangeCodeForToken(client_id, client_secret, code);
+                exchangeCodeForToken(client_id, code);
             }
         }
     );
 }
 
-function exchangeCodeForToken(client_id, client_secret, code) {
+function exchangeCodeForToken(client_id, code) {
     const redirect_uri = chrome.identity.getRedirectURL();
     const details = {
         code: code,
         client_id: client_id,
-        client_secret: client_secret,
         redirect_uri: redirect_uri,
         grant_type: "authorization_code",
     };
@@ -69,7 +80,7 @@ function getAccessTokenFromStorage(callback) {
                 return;
             }
             if (new Date().getTime() > expiration_date) {
-                if (!called) makeRefreshButton();
+                if (!called) makeRefreshingButton();
                 access_token = await refreshAccessToken(refresh_token);
                 let expiration_date = new Date().getTime() + 3600 * 1000; // 1 hour
                 chrome.storage.sync.set(
@@ -79,7 +90,7 @@ function getAccessTokenFromStorage(callback) {
                     },
                     function () {
                         console.log("Access token and expiration date updated");
-                        if (!called) makeSignedInButton();
+                        if (!called) makeRefreshButton();
                         called = true;
                         callback(access_token);
                     }
@@ -97,7 +108,6 @@ function getAccessTokenFromStorage(callback) {
 async function refreshAccessToken(refresh_token) {
     const response1 = await fetch("key.json");
     const data1 = await response1.json();
-    const client_secret = data1.web.client_secret;
     const client_id = data1.web.client_id;
 
     const response = await fetch("https://oauth2.googleapis.com/token", {
@@ -105,7 +115,7 @@ async function refreshAccessToken(refresh_token) {
         headers: {
             "Content-Type": "application/x-www-form-urlencoded",
         },
-        body: `client_id=${client_id}&client_secret=${client_secret}&refresh_token=${refresh_token}&grant_type=refresh_token`,
+        body: `client_id=${client_id}&refresh_token=${refresh_token}&grant_type=refresh_token`,
     });
     const data = await response.json();
     return data.access_token;
@@ -119,27 +129,7 @@ function resetExpirationDate() {
     });
 }
 
-// Function to initiate sign-in when the "Sign in with Google" button is clicked
-document.addEventListener("DOMContentLoaded", function () {
-    document
-        .getElementById("googleSignIn")
-        .addEventListener("click", async function () {
-            const response = await fetch("key.json");
-            const data = await response.json();
-            oauthSignIn(data.web.client_id, data.web.client_secret);
-        });
-    document
-        .getElementById("refreshBtn")
-        .addEventListener("click", resetExpirationDate);
-});
-
-// Function to get the access token from storage when the extension is reopened
-document.addEventListener("DOMContentLoaded", function () {
-    getAccessTokenFromStorage(function (result) {
-        console.log("Access token: ", result);
-    });
-});
-function makeRefreshButton() {
+function makeRefreshingButton() {
     let oldButton = document.getElementById("googleSignIn");
     let newButton = document.createElement("button");
     newButton.innerHTML = "Refreshing Google Sign in";
@@ -148,6 +138,19 @@ function makeRefreshButton() {
     newButton.className = "logged-in-btn";
     newButton.style.backgroundColor = "yellow";
     newButton.style.color = "black";
+    oldButton.parentNode.replaceChild(newButton, oldButton);
+}
+
+function makeRefreshButton() {
+    let oldButton = document.getElementById("googleSignIn");
+    let newButton = document.createElement("button");
+    newButton.innerHTML =
+        "Google Sign in Refreshed, Click to refresh extension";
+    document.getElementById("getEventsBtn").disabled = true;
+    newButton.style.backgroundColor = "#32409F";
+    newButton.addEventListener("click", function () {
+        chrome.runtime.reload();
+    });
     oldButton.parentNode.replaceChild(newButton, oldButton);
 }
 
