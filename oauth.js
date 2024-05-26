@@ -81,6 +81,7 @@ function getAccessTokenFromStorage(callback) {
                         console.log("Access token and expiration date updated");
                         if (!called) makeSignedInButton();
                         called = true;
+                        callback(access_token);
                     }
                 );
             } else {

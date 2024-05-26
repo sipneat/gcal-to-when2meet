@@ -1,19 +1,20 @@
-let access_token;
+let access_token, freeTimes;
 document.addEventListener("DOMContentLoaded", function () {
     getAccessTokenFromStorage(function (result) {
         access_token = result;
     });
 
-    let scrapeBtn = document.getElementById("scrapeBtn");
+    let getEventsBtn = document.getElementById("getEventsBtn");
     if (
         !chrome.tabs.query(
             { active: true, currentWindow: true },
             function (tabs) {
                 const url = tabs[0].url;
                 if (!url.includes("when2meet.com/?")) {
-                    scrapeBtn.disabled = true;
-                    scrapeBtn.innerHTML = "Please navigate to a When2Meet page";
-                } else scrapeBtn.addEventListener("click", scrape);
+                    getEventsBtn.disabled = true;
+                    getEventsBtn.innerHTML =
+                        "Please navigate to a When2Meet page";
+                } else getEventsBtn.addEventListener("click", scrape);
             }
         )
     );
@@ -58,15 +59,50 @@ function functionToInject() {
     return times;
 }
 
+let times, busyTimes;
 async function handleResponse(result) {
-    let times = result[0].result;
+    times = result[0].result;
     let startTime = times[0];
     let endTime = times[times.length - 1];
 
-    let busyTimes = await getCalendarEvents(startTime, endTime, access_token);
+    busyTimes = await getCalendarEvents(
+        startTime,
+        endTime,
+        times,
+        access_token
+    );
+
+    document.getElementById("getEventsBtn").disabled = true;
+
+    let btns_div = document.createElement("div");
+    btns_div.className = "buttons";
+    let fillBtn = document.createElement("button");
+    fillBtn.innerHTML = "Fill in when2meet";
+    fillBtn.id = "fillBtn";
+    fillBtn.addEventListener("click", fillEvents);
+    btns_div.appendChild(fillBtn);
+    document.body.appendChild(btns_div);
+}
+
+function fillEvents() {
     let freeTimes = times.filter((time) => !busyTimes.includes(time));
 
-    console.log("Free times: ", freeTimes);
+    let checkboxes = document.querySelectorAll("input[type='checkbox']");
+    checkboxes.forEach((checkbox) => {
+        if (!checkbox.checked) {
+            let start = parseInt(
+                checkbox.parentElement.parentElement.getAttribute("start")
+            );
+            let end = parseInt(
+                checkbox.parentElement.parentElement.getAttribute("end")
+            );
+            for (let i = start; i < end; i += 900) {
+                if (!freeTimes.includes(i)) {
+                    freeTimes.push(i);
+                }
+            }
+        }
+    });
 
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
         chrome.scripting.executeScript({

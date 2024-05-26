@@ -1,46 +1,4 @@
-document.addEventListener("DOMContentLoaded", function () {
-    document
-        .getElementById("getEventsBtn")
-        .addEventListener("click", function () {
-            getAccessTokenFromStorage(function (access_token) {
-                getCalendarEvents(1716912000, 1717739100, access_token);
-            });
-        });
-});
-
-function generateRecurringEvents(event, startTime, endTime, days) {
-    const allDays = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
-    const events = [];
-
-    days.forEach((day) => {
-        const eventStartDate = new Date(event.start.dateTime);
-        const dayIndex = allDays.indexOf(day);
-        let eventDate = new Date(event.start.dateTime);
-        eventDate.setDate(
-            eventDate.getDate() + ((7 + dayIndex - eventDate.getDay()) % 7)
-        );
-
-        while (eventDate < startTime) {
-            eventDate.setDate(eventDate.getDate() + 7);
-        }
-
-        while (eventDate <= endTime) {
-            const newEvent = JSON.parse(JSON.stringify(event));
-            const eventDuration =
-                new Date(event.end.dateTime) - new Date(event.start.dateTime);
-            newEvent.start.dateTime = new Date(eventDate).toISOString();
-            newEvent.end.dateTime = new Date(
-                eventDate.getTime() + eventDuration
-            ).toISOString();
-            events.push(newEvent);
-            eventDate.setDate(eventDate.getDate() + 7);
-        }
-    });
-
-    return events;
-}
-
-async function getCalendarEvents(start, end, access_token) {
+async function getCalendarEvents(start, end, allTimes, access_token) {
     const startTime = new Date(start * 1000);
     const endTime = new Date(end * 1000);
     console.log(startTime, endTime);
@@ -88,12 +46,21 @@ async function getCalendarEvents(start, end, access_token) {
                     days
                 );
                 recurringEvents.forEach((recurringEvent) => {
+                    !recurringEvent.attendees ||
+                    recurringEvent.attendees.some(
+                        (attendee) =>
+                            attendee.self &&
+                            attendee.responseStatus === "accepted"
+                    )
+                        ? (recurringEvent.active = true)
+                        : (recurringEvent.active = false);
+
                     if (
-                        !recurringEvent.attendees ||
-                        recurringEvent.attendees.some(
-                            (attendee) =>
-                                attendee.self &&
-                                attendee.responseStatus === "accepted"
+                        allTimes.includes(
+                            Date.parse(recurringEvent.start.dateTime) / 1000
+                        ) ||
+                        allTimes.includes(
+                            Date.parse(recurringEvent.end.dateTime) / 1000
                         )
                     ) {
                         confirmedEvents.push(recurringEvent);
@@ -103,12 +70,17 @@ async function getCalendarEvents(start, end, access_token) {
             }
         }
 
+        !event.attendees ||
+        event.attendees.some(
+            (attendee) =>
+                attendee.self && attendee.responseStatus === "accepted"
+        )
+            ? (event.active = true)
+            : (event.active = false);
+
         if (
-            !event.attendees ||
-            event.attendees.some(
-                (attendee) =>
-                    attendee.self && attendee.responseStatus === "accepted"
-            )
+            allTimes.includes(Date.parse(event.start.dateTime) / 1000) ||
+            allTimes.includes(Date.parse(event.end.dateTime) / 1000)
         ) {
             confirmedEvents.push(event);
         }
@@ -125,6 +97,14 @@ async function getCalendarEvents(start, end, access_token) {
     for (var i = 0; i < confirmedEvents.length; i++) {
         var event = document.createElement("div");
         event.className = "eventCard";
+        event.setAttribute(
+            "start",
+            Date.parse(confirmedEvents[i].start.dateTime) / 1000
+        );
+        event.setAttribute(
+            "end",
+            Date.parse(confirmedEvents[i].end.dateTime) / 1000
+        );
         const startDate = new Date(confirmedEvents[i].start.dateTime);
         const endDate = new Date(confirmedEvents[i].end.dateTime);
         const start = `${startDate.toLocaleDateString()} @ ${startDate.toLocaleTimeString(
@@ -139,12 +119,13 @@ async function getCalendarEvents(start, end, access_token) {
             confirmedEvents[i].start.dateTime
         ).toLocaleDateString("en-US", { weekday: "long" });
 
+        let checked = confirmedEvents[i].active ? "checked" : "";
         event.innerHTML = `
             <div class="checkbox">
-                <input type="checkbox" id="eventCheckbox${i}" name="eventCheckbox${i}" checked>
+                <input type="checkbox" id="eventCheckbox${i}" name="eventCheckbox${i}" ${checked}>
             </div>
             <div>
-                <h2>${confirmedEvents[i].summary} - ${dayOfWeek}</h2>
+                <h2>${confirmedEvents[i].summary} ${dayOfWeek}</h2>
                 <p>${start}</p>
                 <p>${end}</p>
             </div>`;
@@ -171,4 +152,35 @@ async function getCalendarEvents(start, end, access_token) {
             return times;
         })
         .flat();
+}
+
+function generateRecurringEvents(event, startTime, endTime, days) {
+    const allDays = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+    const events = [];
+
+    days.forEach((day) => {
+        const dayIndex = allDays.indexOf(day);
+        let eventDate = new Date(event.start.dateTime);
+        eventDate.setDate(
+            eventDate.getDate() + ((7 + dayIndex - eventDate.getDay()) % 7)
+        );
+
+        while (eventDate < startTime) {
+            eventDate.setDate(eventDate.getDate() + 7);
+        }
+
+        while (eventDate <= endTime) {
+            const newEvent = JSON.parse(JSON.stringify(event));
+            const eventDuration =
+                new Date(event.end.dateTime) - new Date(event.start.dateTime);
+            newEvent.start.dateTime = new Date(eventDate).toISOString();
+            newEvent.end.dateTime = new Date(
+                eventDate.getTime() + eventDuration
+            ).toISOString();
+            events.push(newEvent);
+            eventDate.setDate(eventDate.getDate() + 7);
+        }
+    });
+
+    return events;
 }
