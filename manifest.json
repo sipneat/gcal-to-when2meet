@@ -1,9 +1,9 @@
 {
     "name": "Google Calendar to when2meet",
     "version": "1.0.0",
-    "description": "Automatically fill in when2meet avaliability from Google Calendar events",
+    "description": "Automatically fill in when2meet availability from Google Calendar events",
     "manifest_version": 3,
-    "author": "sipneat",
+    "author": "SipnEat",
     "permissions": [
         "activeTab",
         "tabs",
