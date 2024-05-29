@@ -1,8 +1,6 @@
 let access_token, freeTimes;
 document.addEventListener("DOMContentLoaded", function () {
-    getAccessTokenFromStorage(function (result) {
-        access_token = result;
-    });
+    checkAccessToken();
 
     let getEventsBtn = document.getElementById("getEventsBtn");
     if (
@@ -65,12 +63,7 @@ async function handleResponse(result) {
     let startTime = times[0];
     let endTime = times[times.length - 1];
 
-    busyTimes = await getCalendarEvents(
-        startTime,
-        endTime,
-        times,
-        access_token
-    );
+    busyTimes = await getCalendarEvents(startTime, endTime, times);
 
     document.getElementById("getEventsBtn").disabled = true;
 

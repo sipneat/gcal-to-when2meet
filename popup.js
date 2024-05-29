@@ -1,4 +1,6 @@
-async function getCalendarEvents(start, end, allTimes, access_token) {
+async function getCalendarEvents(start, end, allTimes) {
+    const access_token = await getAccessTokenFromStorage();
+
     const startTime = new Date(start * 1000);
     const endTime = new Date(end * 1000);
     console.log(startTime, endTime);
